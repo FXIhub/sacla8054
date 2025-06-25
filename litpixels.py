@@ -1,14 +1,19 @@
+import sys
+import os
 import argparse
+import time
 
 import numpy as np
 import h5py
+import dbpy, stpy
 
-from constants import DET_SHAPE, BATCH_SIZE, ADU_THRESHOLD
-import utils
+from constants import PREFIX, BL_NUM
+from constants import DET_SHAPE, DET_NAME, ADU_THRESHOLD
 
 parser = argparse.ArgumentParser(description='Count lit pixels per frame')
 parser.add_argument('run', type=int, help='Run number')
-parser.add_argument('-m', '--mask', help='Mask file (boolean npy)')
+parser.add_argument('dark_run', type=int, help='Dark run number')
+parser.add_argument('-m', '--mask', help='Good pixel mask file (boolean npy)')
 args = parser.parse_args()
 
 if args.mask is not None:
@@ -16,20 +21,33 @@ if args.mask is not None:
 else:
     mask = np.ones(DET_SHAPE, dtype='bool')
 
-tags = utils.get_tags(args.run)
+with h5py.File(PREFIX + 'dark/r%d_dark.h5'%args.dark_run, 'r') as f:
+    dark = f['data/mean'][:]
+
+tags = dbpy.read_taglist_byrun(BL_NUM, args.run)
 nframes = len(tags)
 print('%d frames in run %d'%(nframes, args.run))
 
-nbatches = int(np.ceil(nframes / BATCH_SIZE))
 litpix = np.zeros(nframes, dtype='i4')
-for b in range(nbatches):
-    st = b * BATCH_SIZE
-    en = min((b+1)*BATCH_SIZE, nframes)
-    frames = utils.get_frames(args.run, np.arange(st, en), taglist=tags)
-    litpix[st:en] = (frames[:,mask] > ADU_THRESHOLD).sum(1)
-    sys.stderr.write('\r%d/%d' % (en, nframes))
+integral = np.zeros(DET_SHAPE)
+objs = [stpy.StorageReader(DET_NAME+'-%d'%i, BL_NUM, (args.run,)) for i in range(1,3)]
+buffs = [stpy.StorageBuffer(obj) for obj in objs]
+stime = time.time()
+for i in range(nframes):
+    for m in range(2):
+        objs[m].collect(buffs[m], tags[i])
+        mod = buffs[m].read_det_data(0) - dark[m]
+        litpix[i] += (mod[mask[m]] > ADU_THRESHOLD).sum()
+        mod[mod <= ADU_THRESHOLD] = 0
+        integral[m] += mod
+    sys.stderr.write('\r%d/%d: %.2f Hz    ' % (i+1, nframes, (i+1)/(time.time()-stime)))
 sys.stderr.write('\n')
+integral /= nframes
 
-with h5py.File(PREFIX + 'events/r%d_events.h5'%args.run, 'w') as f:
-    f['entry_1/litpixels'] = litpix
+out_fname = PREFIX + '/events/r%d_events.h5'%args.run
+with h5py.File(out_fname, 'w') as f:
     f['entry_1/tags'] = tags
+    f['entry_1/litpixels'] = litpix
+    f['entry_1/mask_litpixels'] = mask
+    f['entry_1/integral'] = integral
+os.chmod(out_fname, 0o664)
