@@ -7,12 +7,13 @@ import numpy as np
 import h5py
 import dbpy, stpy
 
+import utils
 from constants import PREFIX, BL_NUM
-from constants import DET_SHAPE, DET_NAME, ADU_THRESHOLD
+from constants import DET_SHAPE, DET_NAME, ADU_THRESHOLD, ADU_PER_PHOTON
 
 parser = argparse.ArgumentParser(description='Count lit pixels per frame')
 parser.add_argument('run', type=int, help='Run number')
-parser.add_argument('dark_run', type=int, help='Dark run number')
+parser.add_argument('-d', '--dark_run', type=int, help='Dark run number')
 parser.add_argument('-m', '--mask', help='Good pixel mask file (boolean npy)')
 args = parser.parse_args()
 
@@ -21,6 +22,9 @@ if args.mask is not None:
 else:
     mask = np.ones(DET_SHAPE, dtype='bool')
 
+if args.dark_run is None:
+    args.dark_run = utils.get_nearest_dark(args.run, past=True)
+    print('Using dark run %d'%args.dark_run)
 with h5py.File(PREFIX + 'dark/r%d_dark.h5'%args.dark_run, 'r') as f:
     dark = f['data/mean'][:]
 
@@ -39,7 +43,7 @@ for i in range(nframes):
         mod = buffs[m].read_det_data(0) - dark[m]
         litpix[i] += (mod[mask[m]] > ADU_THRESHOLD).sum()
         mod[mod <= ADU_THRESHOLD] = 0
-        integral[m] += mod
+        integral[m] += np.clip(np.rint(mod/ADU_PER_PHOTON), 0, np.inf)
     sys.stderr.write('\r%d/%d: %.2f Hz    ' % (i+1, nframes, (i+1)/(time.time()-stime)))
 sys.stderr.write('\n')
 integral /= nframes
