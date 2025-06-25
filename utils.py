@@ -1,7 +1,10 @@
-import dbpy, stpy
-import numpy as np
+import os.path as op
+import glob
 
-from constants import BL_NUM, DET_NAME
+import numpy as np
+import dbpy, stpy
+
+from constants import PREFIX, BL_NUM, DET_NAME
 from constants import DET_SHAPE, ASSEM_SHAPE, ASSEM_SHIFTS
 
 def get_tags(run):
@@ -27,3 +30,11 @@ def assemble(frame):
     assem[s1[0]:s1[0]+DET_SHAPE[1], s1[1]:s1[1]+DET_SHAPE[2]] = frame[0]
     assem[s2[0]:s2[0]+DET_SHAPE[1], s2[1]:s2[1]+DET_SHAPE[2]] = frame[1]
     return assem
+
+def get_nearest_dark(run, past=True):
+    dfiles = sorted(glob.glob(PREFIX+'dark/r*_dark.h5'))
+    druns = np.array([int(op.basename(fname).split('_')[0][1:]) for fname in dfiles])
+    if past:
+        return druns[np.where((druns <= run))[0][-1]]
+    else:
+        return druns[np.abs(druns-run).argmin()]
