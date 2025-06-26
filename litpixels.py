@@ -39,8 +39,11 @@ buffs = [stpy.StorageBuffer(obj) for obj in objs]
 stime = time.time()
 for i in range(nframes):
     for m in range(2):
-        objs[m].collect(buffs[m], tags[i])
-        mod = buffs[m].read_det_data(0) - dark[m]
+        try:
+            objs[m].collect(buffs[m], tags[i])
+            mod = buffs[m].read_det_data(0) - dark[m]
+        except stpy.APIError:
+            mod = np.zeros((1024,512))
         litpix[i] += (mod[mask[m]] > ADU_THRESHOLD).sum()
         mod[mod <= ADU_THRESHOLD] = 0
         integral[m] += np.clip(np.rint(mod/ADU_PER_PHOTON), 0, np.inf)
