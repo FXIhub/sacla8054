@@ -23,6 +23,6 @@ ADU_PER_PHOTON = 96.5
 # Motors
 MOTOR_DICT = {
     49: 'nozzle_x',
-    50: 'nozzle_z',
-    55: 'nozzle_y',
+    50: 'nozzle_y',
+    55: 'nozzle_z',
 }
