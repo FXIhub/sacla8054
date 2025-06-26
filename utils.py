@@ -38,3 +38,13 @@ def get_nearest_dark(run, past=True):
         return druns[np.where((druns <= run))[0][-1]]
     else:
         return druns[np.abs(druns-run).argmin()]
+
+def make_pixmap(dx=-34, dy=101):
+    '''Get pixel coordinates
+    dx and dy refer to the shift of the center compared to 
+    the center of module 1
+    '''
+    m, x, y = np.meshgrid(np.arange(2), np.arange(-512,512.), np.arange(-256,256.), indexing='ij')
+    x[0] += dx+0.01; x[1] -= dx + 0.71
+    y[0] += dy+0.01; y[1] += dy + 533.326
+    return x, y
