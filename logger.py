@@ -1,11 +1,19 @@
 import os
 import time
+import argparse
+import subprocess
 
 import pandas as pd
 import dbpy
 
 from constants import PREFIX, BL_NUM, RUN_INIT, COLUMNS
 
+parser = argparse.ArgumentParser(description='Autologging/processing')
+parser.add_argument('-p', '--process', help='Process new runs', action='store_true')
+args = parser.parse_args()
+
+if args.process:
+    print('Will autoprocess new runs')
 runs_fname = PREFIX + '/runs.csv'
 # Initialize with existing DB if exists
 try:
@@ -33,5 +41,15 @@ while True:
     runs_df.to_csv(runs_fname)
     os.chmod(runs_fname, 0o664)
     print('%d logged'%run)
-    #print(run, rinfo.keys(), rinfo['start_tagnumber'], rinfo['end_tagnumber'])
+
+    if args.process:
+        comment = rinfo['comment'].lower()
+        if 'dark' in comment and not os.path.isfile('data/dark/r%d_dark.h5'%run):
+            #subprocess.Popen(('python proc_dark.py %d'%run).split())
+            subprocess.Popen(('./pbs/proc_dark_launcher.sh %d'%run).split())
+        elif not os.path.isfile('data/events/r%d_events.h5'%run):
+            #subprocess.Popen(('python litpixels.py %d -m data/geom/goodpix_highq.npy'%run).split())
+            subprocess.Popen(('./pbs/litpixels_launcher.sh %d'%run).split())
+        else:
+            print('Litpixels already run')
     run += 1
