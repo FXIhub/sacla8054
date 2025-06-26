@@ -19,3 +19,10 @@ ASSEM_SHIFTS = ([38, 38], [39, 571])
 # Photon conversion
 MOD_GAINS = (25.2525, 25.8232)
 ADU_PER_PHOTON = 96.5
+
+# Motors
+MOTOR_DICT = {
+    49: 'nozzle_x',
+    50: 'nozzle_z',
+    55: 'nozzle_y',
+}
