@@ -26,3 +26,4 @@ MOTOR_DICT = {
     50: 'nozzle_y',
     55: 'nozzle_z',
 }
+I0_KEY = 'xfel_bl_3_st_4_bm_1_pd/charge'
