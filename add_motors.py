@@ -7,7 +7,7 @@ import h5py
 import dbpy
 
 import utils
-from constants import PREFIX, BL_NUM, MOTOR_DICT
+from constants import PREFIX, BL_NUM, MOTOR_DICT, I0_KEY
 
 parser = argparse.ArgumentParser(description='Add motor positions to events file')
 parser.add_argument('run', type=int, help='Run number')
@@ -35,5 +35,15 @@ with h5py.File(events_fname, 'a') as f:
         vals = np.array(dbpy.read_syncdatalist_float(data_key, hightag, taglist))
         f['entry_1/motors/'+event_key] = vals
         added = True
+
+    # Adding pulse energy
+    if 'entry_1/pulse_energy_au' not in f or ('entry_1/pulse_energy_au' in f and args.force):
+        if args.force:
+            del f['entry_1/pulse_energy_au']
+        vals = np.array(dbpy.read_syncdatalist_float(I0_KEY, hightag, taglist))
+        f['entry_1/pulse_energy_au'] = vals
+        added = True
+    else:
+        print('pulse_energy_au already present')
 if added:
     print('Added motor positions to run %d events file'%args.run)
