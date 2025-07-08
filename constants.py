@@ -1,10 +1,10 @@
 PREFIX = '/work/kayyer/2025A8054/'
 DET_NAME = 'MPCCD-2N0-M02-001'
-DET_SHAPE = (2, 1024, 512)
+DET_SHAPE = (2, 1024, 512) # 2 rectangular modules
 BL_NUM = 3
 
 # Auto-logging
-RUN_INIT = 1561457
+RUN_INIT = 1561457 #first run of the experiment
 COLUMNS = ['starttime', 'stoptime', 'total_tagnumber',
            'start_tagnumber', 'end_tagnumber', 'hightagnumber',
            'comment', 'runtype', 'stationnumber', 'runstatus']
