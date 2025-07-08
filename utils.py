@@ -23,7 +23,12 @@ def get_frames(run, indices, taglist=None):
         frames.append(buff.read_det_data(0))
     return frames
 
+
 def assemble(frame):
+    '''
+    Combine 2 detector modules into single image.
+    frame must be shape (2, 1024, 512)
+    '''
     assert frame.shape == DET_SHAPE
     assem = np.zeros(ASSEM_SHAPE, dtype='f4')
     s1, s2 = ASSEM_SHIFTS
@@ -32,6 +37,9 @@ def assemble(frame):
     return assem
 
 def get_nearest_dark(run, past=True):
+    '''
+    Search for the most recent dark run
+    '''
     dfiles = sorted(glob.glob(PREFIX+'dark/r*_dark.h5'))
     druns = np.array([int(op.basename(fname).split('_')[0][1:]) for fname in dfiles])
     if past:
